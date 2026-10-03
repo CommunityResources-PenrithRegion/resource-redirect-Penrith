@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resource Redirect</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  --bg: #E5E1D6;
+  --card: #F4F1E8;
+  --ink: #2B3328;
+  --ink-soft: #5B6156;
+  --food: #C98A2A;
+  --garden: #5C7A4D;
+  --craft: #9C4B36;
+  --repair: #4A6670;
+  --care: #8B5A7A;
+  --other: #7D7263;
+  --line: rgba(43,51,40,0.18);
+  --warn: #9C4B36;
+
+  margin: 0;
+  font-family: 'Work Sans', sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 32px 20px 64px;
+}
+
+.rr-header {
+  max-width: 880px;
+  margin: 0 auto 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+}
+
+.rr-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 6px;
+}
+
+.rr-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.05;
+  margin: 0 0 8px;
+}
+
+.rr-sub {
+  font-size: 15px;
+  color: var(--ink-soft);
+  max-width: 540px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.rr-status {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: rgba(43,51,40,0.06);
+  padding: 5px 10px;
+  border-radius: 3px;
+}
+.rr-status[data-state="error"] { color: var(--warn); background: rgba(156,75,54,0.1); }
+
+.rr-container { max-width: 880px; margin: 0 auto; }
+
+/* Form */
+.rr-form {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 26px;
+}
+
+.rr-form-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; margin: 0 0 14px; }
+
+.rr-form-grid3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.rr-form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+.rr-field label {
+  display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 4px;
+}
+
+.rr-field input, .rr-field select, .rr-field textarea {
+  width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 3px;
+  font-family: 'Work Sans', sans-serif; font-size: 14px; background: #fff; color: var(--ink);
+}
+.rr-field textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
+.rr-field input:focus, .rr-field select:focus, .rr-field textarea:focus { outline: 2px solid var(--garden); outline-offset: 1px; }
+
+.rr-ongoing-row {
+  display: flex; align-items: center; gap: 8px; margin: 12px 0 4px;
+  font-size: 13px; color: var(--ink-soft);
+}
+.rr-ongoing-row input { width: auto; }
+.rr-ongoing-row label { text-transform: none; font-size: 13px; letter-spacing: 0; color: var(--ink); cursor: pointer; }
+
+.rr-submit {
+  margin-top: 8px; background: var(--ink); color: var(--card); border: none;
+  padding: 10px 18px; border-radius: 3px; font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.rr-submit:hover { background: var(--garden); }
+.rr-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.rr-submit:focus-visible { outline: 2px solid var(--craft); outline-offset: 2px; }
+
+.rr-error { color: var(--warn); font-size: 13px; margin: 6px 0 0; }
+
+/* View toggle (Board / Claimed) */
+.rr-view-toggle { display: flex; gap: 0; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+.rr-view-btn {
+  background: none; border: none; padding: 10px 4px; margin-right: 24px;
+  font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; color: var(--ink-soft);
+  cursor: pointer; border-bottom: 2px solid transparent; position: relative; top: 1px;
+}
+.rr-view-btn[data-active="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.rr-view-btn:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
+
+/* Type tabs */
+.rr-type-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.rr-type-btn {
+  border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 3px; cursor: pointer;
+}
+.rr-type-btn[data-active="true"] { background: var(--ink); color: var(--bg); }
+.rr-type-btn:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
+
+/* Category pills */
+.rr-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.rr-filters-hint { font-size: 12px; color: var(--ink-soft); margin: 0 0 22px; }
+.rr-pill {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 13px; font-weight: 500; padding: 6px 14px 6px 12px; border-radius: 3px 3px 3px 0;
+  cursor: pointer; clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 65%);
+}
+.rr-pill[data-active="true"] { background: var(--ink); color: var(--bg); }
+.rr-pill:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
+
+/* Grid + tags */
+.rr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+
+.rr-tag {
+  position: relative; background: var(--card); border: 1px solid var(--line);
+  padding: 16px 14px 14px 26px;
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 0 100%, 0 22px);
+}
+.rr-tag[data-claimed="true"] { opacity: 0.6; }
+
+.rr-tag-hole {
+  position: absolute; top: 10px; left: 8px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--line);
+}
+
+.rr-badge-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+
+.rr-type-badge {
+  font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700;
+  background: var(--ink); color: var(--card); padding: 2px 6px; border-radius: 2px;
+}
+
+.rr-ongoing-badge {
+  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
+  color: var(--garden); border: 1px solid var(--garden); padding: 1px 6px; border-radius: 2px;
+}
+
+.rr-cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rr-cat-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+
+.rr-item { font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px; margin: 6px 0 4px; line-height: 1.15; }
+.rr-qty { font-size: 13px; color: var(--ink-soft); margin: 0 0 10px; }
+.rr-meta { font-size: 13px; color: var(--ink-soft); margin: 2px 0; }
+.rr-meta strong { color: var(--ink); font-weight: 500; display: block; margin-bottom: 2px; }
+.rr-desc { font-size: 13px; color: var(--ink); line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+
+.rr-claim-row { margin-top: 12px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+.rr-claim-btn {
+  border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 3px; cursor: pointer;
+}
+.rr-claim-btn:hover { background: var(--ink); color: var(--card); }
+.rr-claim-btn:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
+
+.rr-confirm-row {
+  margin-top: 12px; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; background: rgba(156,75,54,0.08); padding: 8px 10px; border-radius: 3px;
+}
+.rr-confirm-text { font-size: 12px; color: var(--ink); font-weight: 500; }
+.rr-confirm-btns { display: flex; gap: 6px; }
+.rr-confirm-yes, .rr-confirm-no {
+  font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 3px; cursor: pointer; border: 1px solid var(--ink);
+}
+.rr-confirm-yes { background: var(--ink); color: var(--card); }
+.rr-confirm-no { background: transparent; color: var(--ink); }
+.rr-confirm-yes:focus-visible, .rr-confirm-no:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
+
+.rr-empty { text-align: center; padding: 50px 20px; color: var(--ink-soft); font-size: 14px; }
+.rr-loading { text-align: center; padding: 40px; color: var(--ink-soft); font-size: 14px; }
+
+@media (max-width: 560px) {
+  .rr-form-grid3, .rr-form-grid2 { grid-template-columns: 1fr; }
+  .rr-title { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<div class="rr-header">
+  <p class="rr-eyebrow">Community Resource Board</p>
+  <h1 class="rr-title" id="rr-region-title">Resource Redirect</h1>
+  <p class="rr-sub">Post what you've got spare, what you need, or a skill you can offer. Browse what your neighbours have going. No accounts, no ledger — just a shared board.</p>
+  <span class="rr-status" id="rr-status">Connecting…</span>
+</div>
+
+<div class="rr-container">
+  <div class="rr-form">
+    <p class="rr-form-title">Post to the board</p>
+    <div class="rr-form-grid3">
+      <div class="rr-field">
+        <label for="rr-item">Item / skill</label>
+        <input id="rr-item" type="text" placeholder="e.g. Silverbeet seedlings" maxlength="80" />
+      </div>
+      <div class="rr-field">
+        <label for="rr-type">Type</label>
+        <select id="rr-type">
+          <option value="offer">Offer</option>
+          <option value="request">Request</option>
+          <option value="service">Service</option>
+        </select>
+      </div>
+      <div class="rr-field">
+        <label for="rr-cat" id="rr-cat-label">Category</label>
+        <select id="rr-cat"></select>
+      </div>
+    </div>
+    <div class="rr-form-grid2">
+      <div class="rr-field">
+        <label for="rr-qty" id="rr-qty-label">Quantity</label>
+        <input id="rr-qty" type="text" placeholder="e.g. 6 punnets" maxlength="40" />
+      </div>
+      <div class="rr-field">
+        <label for="rr-area">Suburb / area</label>
+        <input id="rr-area" type="text" placeholder="e.g. Marrickville" maxlength="60" />
+      </div>
+    </div>
+    <div class="rr-field">
+      <label for="rr-contact">Contact + Description</label>
+      <textarea id="rr-contact" placeholder="How to reach you, plus any details — e.g. 'Jane, 04xx xxx xxx. Ongoing supply, happy to swap for veggie scraps.'" maxlength="400"></textarea>
+    </div>
+    <div class="rr-ongoing-row">
+      <input type="checkbox" id="rr-ongoing" />
+      <label for="rr-ongoing">This is ongoing / repeat availability, not a one-off</label>
+    </div>
+    <button class="rr-submit" id="rr-submit">Post listing</button>
+    <p class="rr-error" id="rr-error" style="display:none;"></p>
+  </div>
+
+  <div class="rr-view-toggle" id="rr-view-toggle"></div>
+  <div id="rr-board-controls"></div>
+  <div id="rr-body"><div class="rr-loading">Loading listings…</div></div>
+</div>
+
+<script>
+/* =========================================================
+   REGION CONFIG — edit these three values for each region
+   you deploy. Everything else in this file stays identical.
+   ========================================================= */
+const CONFIG = {
+  regionName: CommunityResources - PenrithRegion,        // e.g. "Resource Redirect — Marrickville"
+  supabaseUrl: https://payvfoethdxoyauhwrmj.supabase.co,   // Project Settings > API > Project URL
+  supabaseAnonKey: sb_publishable_OLYRX0I0sv2zf5gfHdIkFA_7qVHspnj,  // Project Settings > API > anon public key
+};
+/* ========================================================= */
+
+document.getElementById('rr-region-title').textContent = CONFIG.regionName;
+
+const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+
+const RESOURCE_CATS = {
+  food:   { label: 'Food',   color: 'var(--food)' },
+  garden: { label: 'Garden', color: 'var(--garden)' },
+  craft:  { label: 'Craft',  color: 'var(--craft)' },
+  repair: { label: 'Repair', color: 'var(--repair)' },
+  other:  { label: 'Other',  color: 'var(--other)' },
+};
+const SERVICE_CATS = {
+  distribution: { label: 'Distribution & Transport',  color: 'var(--repair)' },
+  tools:        { label: 'Tools & Equipment Lending', color: 'var(--craft)' },
+  handyman:     { label: 'Handyman & Repair Help',     color: 'var(--food)' },
+  knowledge:    { label: 'Knowledge & Skill Share',    color: 'var(--garden)' },
+  care:         { label: 'Care & Community',           color: 'var(--care)' },
+  other:        { label: 'Other / New idea',           color: 'var(--other)' },
+};
+const TYPES = { offer: 'Offer', request: 'Request', service: 'Service' };
+const QTY_LABELS = { offer: 'Quantity', request: 'Quantity needed', service: 'Availability' };
+
+function catsForType(type) { return type === 'service' ? SERVICE_CATS : RESOURCE_CATS; }
+
+let listings = [];
+let view = 'board';
+let activeType = 'all';
+let activeCat = 'all';
+let confirmingId = null;
+
+const bodyEl = document.getElementById('rr-body');
+const viewToggleEl = document.getElementById('rr-view-toggle');
+const boardControlsEl = document.getElementById('rr-board-controls');
+const errorEl = document.getElementById('rr-error');
+const statusEl = document.getElementById('rr-status');
+const typeSelectEl = document.getElementById('rr-type');
+const catSelectEl = document.getElementById('rr-cat');
+const catLabelEl = document.getElementById('rr-cat-label');
+const qtyLabelEl = document.getElementById('rr-qty-label');
+const submitBtn = document.getElementById('rr-submit');
+
+function populateCatSelect() {
+  const cats = catsForType(typeSelectEl.value);
+  catLabelEl.textContent = typeSelectEl.value === 'service' ? 'Service type' : 'Category';
+  catSelectEl.innerHTML = Object.entries(cats).map(([key, def]) =>
+    `<option value="${key}">${def.label}</option>`).join('');
+  qtyLabelEl.textContent = QTY_LABELS[typeSelectEl.value];
+}
+typeSelectEl.addEventListener('change', populateCatSelect);
+populateCatSelect();
+
+function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+function clearError() { errorEl.style.display = 'none'; }
+function setStatus(msg, state) {
+  statusEl.textContent = msg;
+  if (state) statusEl.setAttribute('data-state', state); else statusEl.removeAttribute('data-state');
+}
+
+function fromRow(row) {
+  return {
+    id: row.id, item: row.item, type: row.type, qty: row.qty, category: row.category,
+    area: row.area, contact: row.contact, ongoing: row.ongoing, claimed: row.claimed,
+    createdAt: new Date(row.created_at).getTime(),
+  };
+}
+
+async function loadListings() {
+  const { data, error } = await supabase.from('listings').select('*').order('created_at', { ascending: false });
+  if (error) {
+    setStatus('Could not connect to the board — check the config values in this file.', 'error');
+    listings = [];
+  } else {
+    listings = data.map(fromRow);
+    setStatus('Connected — updates live for everyone on this board.');
+  }
+  render();
+}
+
+supabase
+  .channel('listings-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => { loadListings(); })
+  .subscribe();
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+function renderViewToggle() {
+  const activeCount = listings.filter(l => !l.claimed).length;
+  const claimedCount = listings.filter(l => l.claimed).length;
+  viewToggleEl.innerHTML = `
+    <button class="rr-view-btn" data-active="${view === 'board'}" data-view="board">Board (${activeCount})</button>
+    <button class="rr-view-btn" data-active="${view === 'claimed'}" data-view="claimed">Claimed (${claimedCount})</button>
+  `;
+  viewToggleEl.querySelectorAll('.rr-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => { view = btn.getAttribute('data-view'); confirmingId = null; render(); });
+  });
+}
+
+function renderBoardControls() {
+  if (view !== 'board') { boardControlsEl.innerHTML = ''; return; }
+
+  const activeListings = listings.filter(l => !l.claimed);
+  const typeCounts = { all: activeListings.length };
+  Object.keys(TYPES).forEach(t => typeCounts[t] = activeListings.filter(l => l.type === t).length);
+
+  let html = '<div class="rr-type-tabs">';
+  html += `<button class="rr-type-btn" data-active="${activeType === 'all'}" data-type="all">All (${typeCounts.all})</button>`;
+  Object.entries(TYPES).forEach(([key, label]) => {
+    html += `<button class="rr-type-btn" data-active="${activeType === key}" data-type="${key}">${label}s (${typeCounts[key]})</button>`;
+  });
+  html += '</div>';
+
+  if (activeType === 'all') {
+    html += '<p class="rr-filters-hint">Pick Offer, Request or Service above to filter by category.</p>';
+  } else {
+    const cats = catsForType(activeType);
+    const typeScoped = activeListings.filter(l => l.type === activeType);
+    const catCounts = { all: typeScoped.length };
+    Object.keys(cats).forEach(c => catCounts[c] = typeScoped.filter(l => l.category === c).length);
+
+    html += '<div class="rr-filters">';
+    html += `<button class="rr-pill" data-active="${activeCat === 'all'}" data-cat="all">All (${catCounts.all})</button>`;
+    Object.entries(cats).forEach(([key, def]) => {
+      html += `<button class="rr-pill" data-active="${activeCat === key}" data-cat="${key}">${def.label} (${catCounts[key]})</button>`;
+    });
+    html += '</div>';
+  }
+
+  boardControlsEl.innerHTML = html;
+
+  boardControlsEl.querySelectorAll('.rr-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => { activeType = btn.getAttribute('data-type'); activeCat = 'all'; render(); });
+  });
+  boardControlsEl.querySelectorAll('.rr-pill').forEach(btn => {
+    btn.addEventListener('click', () => { activeCat = btn.getAttribute('data-cat'); render(); });
+  });
+}
+
+function renderListings() {
+  let filtered;
+  if (view === 'claimed') {
+    filtered = listings.filter(l => l.claimed);
+  } else {
+    filtered = listings.filter(l => !l.claimed);
+    if (activeType !== 'all') filtered = filtered.filter(l => l.type === activeType);
+    if (activeType !== 'all' && activeCat !== 'all') filtered = filtered.filter(l => l.category === activeCat);
+  }
+
+  const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
+
+  if (sorted.length === 0) {
+    const msg = view === 'claimed' ? 'Nothing claimed yet.' : 'Nothing here yet. Be the first to post.';
+    bodyEl.innerHTML = `<div class="rr-empty">${msg}</div>`;
+    return;
+  }
+
+  bodyEl.innerHTML = `<div class="rr-grid">${sorted.map(cardHtml).join('')}</div>`;
+
+  bodyEl.querySelectorAll('[data-claim-id]').forEach(btn => {
+    btn.addEventListener('click', () => { confirmingId = btn.getAttribute('data-claim-id'); render(); });
+  });
+  bodyEl.querySelectorAll('[data-confirm-yes]').forEach(btn => {
+    btn.addEventListener('click', () => toggleClaim(btn.getAttribute('data-confirm-yes')));
+  });
+  bodyEl.querySelectorAll('[data-confirm-no]').forEach(btn => {
+    btn.addEventListener('click', () => { confirmingId = null; render(); });
+  });
+}
+
+function cardHtml(l) {
+  const cats = catsForType(l.type);
+  const cat = cats[l.category] || cats.other;
+  const isConfirming = confirmingId === l.id;
+  const actionLabel = l.claimed ? 'Mark available' : 'Mark as claimed';
+  const confirmQuestion = l.claimed ? 'Mark this available again?' : 'Mark this as claimed?';
+
+  const actionHtml = isConfirming
+    ? `<div class="rr-confirm-row">
+         <span class="rr-confirm-text">${confirmQuestion}</span>
+         <div class="rr-confirm-btns">
+           <button class="rr-confirm-yes" data-confirm-yes="${l.id}">Yes</button>
+           <button class="rr-confirm-no" data-confirm-no="${l.id}">No</button>
+         </div>
+       </div>`
+    : `<div class="rr-claim-row">
+         <button class="rr-claim-btn" data-claim-id="${l.id}">${actionLabel}</button>
+       </div>`;
+
+  return `
+    <div class="rr-tag" data-claimed="${l.claimed}">
+      <div class="rr-tag-hole"></div>
+      <div class="rr-badge-row">
+        <span class="rr-type-badge">${TYPES[l.type] || 'Offer'}</span>
+        ${l.ongoing ? '<span class="rr-ongoing-badge">Ongoing</span>' : ''}
+      </div>
+      <div class="rr-badge-row">
+        <span class="rr-cat-dot" style="background:${cat.color}"></span>
+        <span class="rr-cat-label">${cat.label}</span>
+      </div>
+      <p class="rr-item">${escapeHtml(l.item)}</p>
+      <p class="rr-qty">${escapeHtml(l.qty)}</p>
+      <p class="rr-meta"><strong>Area</strong>${escapeHtml(l.area || '—')}</p>
+      <p class="rr-meta" style="margin-top:8px;"><strong>Contact + Description</strong><span class="rr-desc">${escapeHtml(l.contact)}</span></p>
+      ${actionHtml}
+    </div>
+  `;
+}
+
+function render() {
+  renderViewToggle();
+  renderBoardControls();
+  renderListings();
+}
+
+async function toggleClaim(id) {
+  const item = listings.find(l => l.id === id);
+  if (!item) return;
+  const newClaimed = !item.claimed;
+  confirmingId = null;
+  const { error } = await supabase.from('listings').update({ claimed: newClaimed }).eq('id', id);
+  if (error) {
+    showError("Couldn't update — check your connection and try again.");
+  } else {
+    clearError();
+    await loadListings();
+  }
+}
+
+submitBtn.addEventListener('click', async () => {
+  clearError();
+  const item = document.getElementById('rr-item').value.trim();
+  const type = typeSelectEl.value;
+  const qty = document.getElementById('rr-qty').value.trim();
+  const category = catSelectEl.value;
+  const area = document.getElementById('rr-area').value.trim();
+  const contact = document.getElementById('rr-contact').value.trim();
+  const ongoing = document.getElementById('rr-ongoing').checked;
+
+  if (!item || !qty || !area || !contact) {
+    showError('Fill in item, quantity, area and contact/description before posting.');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  const { error } = await supabase.from('listings').insert([{
+    item, type, qty, category, area, contact, ongoing, claimed: false,
+  }]);
+  submitBtn.disabled = false;
+
+  if (error) {
+    showError("Couldn't save — check your connection and try again.");
+    return;
+  }
+
+  document.getElementById('rr-item').value = '';
+  document.getElementById('rr-qty').value = '';
+  document.getElementById('rr-area').value = '';
+  document.getElementById('rr-contact').value = '';
+  document.getElementById('rr-ongoing').checked = false;
+  await loadListings();
+});
+
+loadListings();
+</script>
+</body>
+</html>
