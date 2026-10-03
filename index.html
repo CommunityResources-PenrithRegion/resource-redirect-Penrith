@@ -288,7 +288,7 @@ const CONFIG = {
 
 document.getElementById('rr-region-title').textContent = CONFIG.regionName;
 
-const supabase = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+const supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
 
 const RESOURCE_CATS = {
   food:   { label: 'Food',   color: 'var(--food)' },
@@ -353,7 +353,7 @@ function fromRow(row) {
 }
 
 async function loadListings() {
-  const { data, error } = await supabase.from('listings').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabaseClient.from('listings').select('*').order('created_at', { ascending: false });
   if (error) {
     setStatus('Could not connect to the board — check the config values in this file.', 'error');
     listings = [];
@@ -364,7 +364,7 @@ async function loadListings() {
   render();
 }
 
-supabase
+supabaseClient
   .channel('listings-changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => { loadListings(); })
   .subscribe();
@@ -508,7 +508,7 @@ async function toggleClaim(id) {
   if (!item) return;
   const newClaimed = !item.claimed;
   confirmingId = null;
-  const { error } = await supabase.from('listings').update({ claimed: newClaimed }).eq('id', id);
+  const { error } = await supabaseClient.from('listings').update({ claimed: newClaimed }).eq('id', id);
   if (error) {
     showError("Couldn't update — check your connection and try again.");
   } else {
@@ -533,7 +533,7 @@ submitBtn.addEventListener('click', async () => {
   }
 
   submitBtn.disabled = true;
-  const { error } = await supabase.from('listings').insert([{
+  const { error } = await supabaseClient.from('listings').insert([{
     item, type, qty, category, area, contact, ongoing, claimed: false,
   }]);
   submitBtn.disabled = false;
