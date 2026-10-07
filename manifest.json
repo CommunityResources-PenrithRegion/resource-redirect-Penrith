@@ -1,6 +1,6 @@
 {
   "name": "Resource Redirect",
-  "short_name": "Resource Redirect",
+  "short_name": "Re-Direct",
   "description": "A shared community board for offers, requests and services.",
   "start_url": "./",
   "scope": "./",

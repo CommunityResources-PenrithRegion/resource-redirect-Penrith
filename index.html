@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Resource Redirect</title>
 <meta name="theme-color" content="#2B3328" />
-<meta name="apple-mobile-web-app-title" content="Resource Redirect" />
+<meta name="apple-mobile-web-app-title" content="Re-Direct" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="manifest" href="manifest.json" />
@@ -109,6 +109,24 @@ body {
 }
 .rr-field textarea { resize: vertical; min-height: 60px; line-height: 1.4; }
 .rr-field input:focus, .rr-field select:focus, .rr-field textarea:focus { outline: 2px solid var(--garden); outline-offset: 1px; }
+
+.rr-group { margin-bottom: 14px; }
+.rr-group-label { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+.rr-seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
+.rr-seg button {
+  background: transparent; color: var(--ink); border: none; padding: 9px 28px;
+  font-family: 'Work Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.rr-seg button + button { border-left: 1px solid var(--ink); }
+.rr-seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.rr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.rr-chip {
+  display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink); font-family: 'Work Sans', sans-serif;
+  font-size: 13px; font-weight: 500; padding: 7px 12px; border-radius: 3px; cursor: pointer;
+}
+.rr-chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.rr-seg button:focus-visible, .rr-chip:focus-visible { outline: 2px solid var(--repair); outline-offset: 2px; }
 
 .rr-ongoing-row {
   display: flex; align-items: center; gap: 8px; margin: 12px 0 4px;
@@ -236,23 +254,21 @@ body {
 <div class="rr-container">
   <div class="rr-form">
     <p class="rr-form-title">Post to the board</p>
-    <div class="rr-form-grid3">
-      <div class="rr-field">
-        <label for="rr-item">Item / skill</label>
-        <input id="rr-item" type="text" placeholder="e.g. Silverbeet seedlings" maxlength="80" />
-      </div>
-      <div class="rr-field">
-        <label for="rr-type">Type</label>
-        <select id="rr-type">
-          <option value="offer">Offer</option>
-          <option value="request">Request</option>
-          <option value="service">Service</option>
-        </select>
-      </div>
-      <div class="rr-field">
-        <label for="rr-cat" id="rr-cat-label">Category</label>
-        <select id="rr-cat"></select>
-      </div>
+    <div class="rr-field rr-group">
+      <label for="rr-item">Item / skill</label>
+      <input id="rr-item" type="text" placeholder="e.g. Silverbeet seedlings" maxlength="80" />
+    </div>
+    <div class="rr-field rr-group">
+      <span class="rr-group-label">Type</span>
+      <div class="rr-seg" id="rr-type-toggle" role="group" aria-label="Type"></div>
+    </div>
+    <div class="rr-field rr-group">
+      <span class="rr-group-label">Category</span>
+      <div class="rr-chips" id="rr-cat-toggle" role="group" aria-label="Category"></div>
+    </div>
+    <div class="rr-field rr-group" id="rr-svc-group" style="display:none;">
+      <span class="rr-group-label">What kind of service?</span>
+      <div class="rr-chips" id="rr-svc-toggle" role="group" aria-label="Kind of service"></div>
     </div>
     <div class="rr-form-grid2">
       <div class="rr-field">
@@ -287,7 +303,7 @@ body {
    you deploy. Everything else in this file stays identical.
    ========================================================= */
 const CONFIG = {
-  regionName: "CommunityResources - PenrithRegion",
+  regionName: "Resource Direct - Penrith Region",
   supabaseUrl: "https://payvfoethdxoyauhwrmj.supabase.co",
   supabaseAnonKey: "sb_publishable_OLYRX0I0sv2zf5gfHdIkFA_7qVHspnj",
 };
@@ -298,51 +314,99 @@ document.getElementById('rr-region-title').textContent = CONFIG.regionName;
 const supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
 
 const RESOURCE_CATS = {
-  food:   { label: 'Food',   color: 'var(--food)' },
-  garden: { label: 'Garden', color: 'var(--garden)' },
-  craft:  { label: 'Craft',  color: 'var(--craft)' },
-  repair: { label: 'Repair', color: 'var(--repair)' },
-  other:  { label: 'Other',  color: 'var(--other)' },
+  food:    { label: 'Food',    color: 'var(--food)' },
+  garden:  { label: 'Garden',  color: 'var(--garden)' },
+  craft:   { label: 'Craft',   color: 'var(--craft)' },
+  repair:  { label: 'Repair',  color: 'var(--repair)' },
+  service: { label: 'Service', color: 'var(--care)' },
+  other:   { label: 'Other',   color: 'var(--other)' },
 };
-const SERVICE_CATS = {
-  distribution: { label: 'Distribution & Transport',  color: 'var(--repair)' },
-  tools:        { label: 'Tools & Equipment Lending', color: 'var(--craft)' },
-  handyman:     { label: 'Handyman & Repair Help',     color: 'var(--food)' },
-  knowledge:    { label: 'Knowledge & Skill Share',    color: 'var(--garden)' },
-  care:         { label: 'Care & Community',           color: 'var(--care)' },
-  other:        { label: 'Other / New idea',           color: 'var(--other)' },
+const SERVICE_SUBS = {
+  svc_distribution: { label: 'Distribution & Transport' },
+  svc_tools:        { label: 'Tools & Equipment Lending' },
+  svc_handyman:     { label: 'Handyman & Repair Help' },
+  svc_knowledge:    { label: 'Knowledge & Skill Share' },
+  svc_care:         { label: 'Care & Community' },
+  svc_other:        { label: 'Other / New idea' },
 };
-const TYPES = { offer: 'Offer', request: 'Request', service: 'Service' };
-const QTY_LABELS = { offer: 'Quantity', request: 'Quantity needed', service: 'Availability' };
+const TYPES = { offer: 'Offer', request: 'Request' };
 
-function catsForType(type) { return type === 'service' ? SERVICE_CATS : RESOURCE_CATS; }
+function isService(category) { return String(category || '').startsWith('svc_'); }
+function topCategory(category) { return isService(category) ? 'service' : category; }
+function catInfo(category) {
+  if (isService(category)) {
+    const sub = SERVICE_SUBS[category] || SERVICE_SUBS.svc_other;
+    return { label: 'Service · ' + sub.label, color: RESOURCE_CATS.service.color };
+  }
+  return RESOURCE_CATS[category] || RESOURCE_CATS.other;
+}
 
 let listings = [];
 let view = 'board';
 let activeType = 'all';
 let activeCat = 'all';
+let activeSvc = 'all';
 let confirmingId = null;
+
+// Form state
+let formType = 'offer';
+let formCat = null;   // top-level category key, or null until chosen
+let formSvc = null;   // service sub-type key, only used when formCat === 'service'
 
 const bodyEl = document.getElementById('rr-body');
 const viewToggleEl = document.getElementById('rr-view-toggle');
 const boardControlsEl = document.getElementById('rr-board-controls');
 const errorEl = document.getElementById('rr-error');
 const statusEl = document.getElementById('rr-status');
-const typeSelectEl = document.getElementById('rr-type');
-const catSelectEl = document.getElementById('rr-cat');
-const catLabelEl = document.getElementById('rr-cat-label');
+const typeToggleEl = document.getElementById('rr-type-toggle');
+const catToggleEl = document.getElementById('rr-cat-toggle');
+const svcGroupEl = document.getElementById('rr-svc-group');
+const svcToggleEl = document.getElementById('rr-svc-toggle');
 const qtyLabelEl = document.getElementById('rr-qty-label');
+const qtyInputEl = document.getElementById('rr-qty');
 const submitBtn = document.getElementById('rr-submit');
 
-function populateCatSelect() {
-  const cats = catsForType(typeSelectEl.value);
-  catLabelEl.textContent = typeSelectEl.value === 'service' ? 'Service type' : 'Category';
-  catSelectEl.innerHTML = Object.entries(cats).map(([key, def]) =>
-    `<option value="${key}">${def.label}</option>`).join('');
-  qtyLabelEl.textContent = QTY_LABELS[typeSelectEl.value];
+function renderFormToggles() {
+  typeToggleEl.innerHTML = Object.entries(TYPES).map(([key, label]) =>
+    `<button type="button" aria-pressed="${formType === key}" data-type="${key}">${label}</button>`).join('');
+
+  catToggleEl.innerHTML = Object.entries(RESOURCE_CATS).map(([key, def]) =>
+    `<button type="button" class="rr-chip" aria-pressed="${formCat === key}" data-cat="${key}"><span class="rr-cat-dot" style="background:${def.color}"></span>${def.label}</button>`).join('');
+
+  svcGroupEl.style.display = formCat === 'service' ? '' : 'none';
+  svcToggleEl.innerHTML = Object.entries(SERVICE_SUBS).map(([key, def]) =>
+    `<button type="button" class="rr-chip" aria-pressed="${formSvc === key}" data-svc="${key}">${def.label}</button>`).join('');
+
+  const svc = formCat === 'service';
+  if (svc) {
+    qtyLabelEl.textContent = formType === 'offer' ? 'Availability' : 'When needed';
+    qtyInputEl.placeholder = 'e.g. Weekends, 9am–5pm';
+  } else {
+    qtyLabelEl.textContent = formType === 'offer' ? 'Quantity' : 'Quantity needed';
+    qtyInputEl.placeholder = 'e.g. 6 punnets';
+  }
 }
-typeSelectEl.addEventListener('change', populateCatSelect);
-populateCatSelect();
+
+typeToggleEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  formType = btn.getAttribute('data-type');
+  renderFormToggles();
+});
+catToggleEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  formCat = btn.getAttribute('data-cat');
+  if (formCat !== 'service') formSvc = null;
+  renderFormToggles();
+});
+svcToggleEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  formSvc = btn.getAttribute('data-svc');
+  renderFormToggles();
+});
+renderFormToggles();
 
 function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
 function clearError() { errorEl.style.display = 'none'; }
@@ -352,8 +416,17 @@ function setStatus(msg, state) {
 }
 
 function fromRow(row) {
+  let type = row.type;
+  let category = row.category;
+  // Older listings were saved with type "service". Show them as Offers
+  // in the Service category so nothing already on the board gets lost.
+  if (type === 'service') {
+    type = 'offer';
+    category = 'svc_' + category;
+    if (!SERVICE_SUBS[category]) category = 'svc_other';
+  }
   return {
-    id: row.id, item: row.item, type: row.type, qty: row.qty, category: row.category,
+    id: row.id, item: row.item, type, qty: row.qty, category,
     area: row.area, contact: row.contact, ongoing: row.ongoing, claimed: row.claimed,
     createdAt: new Date(row.created_at).getTime(),
   };
@@ -401,6 +474,10 @@ function renderBoardControls() {
   const typeCounts = { all: activeListings.length };
   Object.keys(TYPES).forEach(t => typeCounts[t] = activeListings.filter(l => l.type === t).length);
 
+  const typeScoped = activeType === 'all' ? activeListings : activeListings.filter(l => l.type === activeType);
+  const catCounts = { all: typeScoped.length };
+  Object.keys(RESOURCE_CATS).forEach(c => catCounts[c] = typeScoped.filter(l => topCategory(l.category) === c).length);
+
   let html = '<div class="rr-type-tabs">';
   html += `<button class="rr-type-btn" data-active="${activeType === 'all'}" data-type="all">All (${typeCounts.all})</button>`;
   Object.entries(TYPES).forEach(([key, label]) => {
@@ -408,18 +485,20 @@ function renderBoardControls() {
   });
   html += '</div>';
 
-  if (activeType === 'all') {
-    html += '<p class="rr-filters-hint">Pick Offer, Request or Service above to filter by category.</p>';
-  } else {
-    const cats = catsForType(activeType);
-    const typeScoped = activeListings.filter(l => l.type === activeType);
-    const catCounts = { all: typeScoped.length };
-    Object.keys(cats).forEach(c => catCounts[c] = typeScoped.filter(l => l.category === c).length);
+  html += '<div class="rr-filters">';
+  html += `<button class="rr-pill" data-active="${activeCat === 'all'}" data-cat="all">All (${catCounts.all})</button>`;
+  Object.entries(RESOURCE_CATS).forEach(([key, def]) => {
+    html += `<button class="rr-pill" data-active="${activeCat === key}" data-cat="${key}">${def.label} (${catCounts[key]})</button>`;
+  });
+  html += '</div>';
 
+  if (activeCat === 'service') {
+    const svcScoped = typeScoped.filter(l => topCategory(l.category) === 'service');
     html += '<div class="rr-filters">';
-    html += `<button class="rr-pill" data-active="${activeCat === 'all'}" data-cat="all">All (${catCounts.all})</button>`;
-    Object.entries(cats).forEach(([key, def]) => {
-      html += `<button class="rr-pill" data-active="${activeCat === key}" data-cat="${key}">${def.label} (${catCounts[key]})</button>`;
+    html += `<button class="rr-pill" data-active="${activeSvc === 'all'}" data-svc="all">All services (${svcScoped.length})</button>`;
+    Object.entries(SERVICE_SUBS).forEach(([key, def]) => {
+      const n = svcScoped.filter(l => l.category === key).length;
+      html += `<button class="rr-pill" data-active="${activeSvc === key}" data-svc="${key}">${def.label} (${n})</button>`;
     });
     html += '</div>';
   }
@@ -427,10 +506,13 @@ function renderBoardControls() {
   boardControlsEl.innerHTML = html;
 
   boardControlsEl.querySelectorAll('.rr-type-btn').forEach(btn => {
-    btn.addEventListener('click', () => { activeType = btn.getAttribute('data-type'); activeCat = 'all'; render(); });
+    btn.addEventListener('click', () => { activeType = btn.getAttribute('data-type'); render(); });
   });
-  boardControlsEl.querySelectorAll('.rr-pill').forEach(btn => {
-    btn.addEventListener('click', () => { activeCat = btn.getAttribute('data-cat'); render(); });
+  boardControlsEl.querySelectorAll('[data-cat]').forEach(btn => {
+    btn.addEventListener('click', () => { activeCat = btn.getAttribute('data-cat'); activeSvc = 'all'; render(); });
+  });
+  boardControlsEl.querySelectorAll('[data-svc]').forEach(btn => {
+    btn.addEventListener('click', () => { activeSvc = btn.getAttribute('data-svc'); render(); });
   });
 }
 
@@ -441,7 +523,8 @@ function renderListings() {
   } else {
     filtered = listings.filter(l => !l.claimed);
     if (activeType !== 'all') filtered = filtered.filter(l => l.type === activeType);
-    if (activeType !== 'all' && activeCat !== 'all') filtered = filtered.filter(l => l.category === activeCat);
+    if (activeCat !== 'all') filtered = filtered.filter(l => topCategory(l.category) === activeCat);
+    if (activeCat === 'service' && activeSvc !== 'all') filtered = filtered.filter(l => l.category === activeSvc);
   }
 
   const sorted = [...filtered].sort((a, b) => b.createdAt - a.createdAt);
@@ -466,8 +549,7 @@ function renderListings() {
 }
 
 function cardHtml(l) {
-  const cats = catsForType(l.type);
-  const cat = cats[l.category] || cats.other;
+  const cat = catInfo(l.category);
   const isConfirming = confirmingId === l.id;
   const actionLabel = l.claimed ? 'Mark available' : 'Mark as claimed';
   const confirmQuestion = l.claimed ? 'Mark this available again?' : 'Mark this as claimed?';
@@ -493,7 +575,7 @@ function cardHtml(l) {
       </div>
       <div class="rr-badge-row">
         <span class="rr-cat-dot" style="background:${cat.color}"></span>
-        <span class="rr-cat-label">${cat.label}</span>
+        <span class="rr-cat-label">${escapeHtml(cat.label)}</span>
       </div>
       <p class="rr-item">${escapeHtml(l.item)}</p>
       <p class="rr-qty">${escapeHtml(l.qty)}</p>
@@ -527,17 +609,20 @@ async function toggleClaim(id) {
 submitBtn.addEventListener('click', async () => {
   clearError();
   const item = document.getElementById('rr-item').value.trim();
-  const type = typeSelectEl.value;
-  const qty = document.getElementById('rr-qty').value.trim();
-  const category = catSelectEl.value;
+  const qty = qtyInputEl.value.trim();
   const area = document.getElementById('rr-area').value.trim();
   const contact = document.getElementById('rr-contact').value.trim();
   const ongoing = document.getElementById('rr-ongoing').checked;
 
+  if (!formCat) { showError('Pick a category before posting.'); return; }
+  if (formCat === 'service' && !formSvc) { showError('Pick what kind of service this is.'); return; }
   if (!item || !qty || !area || !contact) {
-    showError('Fill in item, quantity, area and contact/description before posting.');
+    showError('Fill in item, quantity/availability, area and contact/description before posting.');
     return;
   }
+
+  const type = formType;
+  const category = formCat === 'service' ? formSvc : formCat;
 
   submitBtn.disabled = true;
   const { error } = await supabaseClient.from('listings').insert([{
@@ -551,10 +636,13 @@ submitBtn.addEventListener('click', async () => {
   }
 
   document.getElementById('rr-item').value = '';
-  document.getElementById('rr-qty').value = '';
+  qtyInputEl.value = '';
   document.getElementById('rr-area').value = '';
   document.getElementById('rr-contact').value = '';
   document.getElementById('rr-ongoing').checked = false;
+  formCat = null;
+  formSvc = null;
+  renderFormToggles();
   await loadListings();
 });
 
