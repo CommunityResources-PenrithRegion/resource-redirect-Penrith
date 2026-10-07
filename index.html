@@ -28,6 +28,10 @@ body {
   --other: #7D7263;
   --line: rgba(43,51,40,0.18);
   --warn: #9C4B36;
+  --offer: #2F6B63;
+  --offer-tint: #E4EEE9;
+  --request: #B4602B;
+  --request-tint: #F6E7D8;
 
   margin: 0;
   font-family: 'Work Sans', sans-serif;
@@ -235,6 +239,18 @@ body {
 
 .rr-empty { text-align: center; padding: 50px 20px; color: var(--ink-soft); font-size: 14px; }
 .rr-loading { text-align: center; padding: 40px; color: var(--ink-soft); font-size: 14px; }
+
+/* Offer vs Request colouring */
+.rr-tag[data-type="offer"]   { background: var(--offer-tint);   border-top: 4px solid var(--offer); }
+.rr-tag[data-type="request"] { background: var(--request-tint); border-top: 4px solid var(--request); }
+.rr-type-badge[data-type="offer"]   { background: var(--offer); }
+.rr-type-badge[data-type="request"] { background: var(--request); }
+.rr-seg button[data-type="offer"][aria-pressed="true"]   { background: var(--offer);   color: #fff; }
+.rr-seg button[data-type="request"][aria-pressed="true"] { background: var(--request); color: #fff; }
+.rr-type-btn[data-type="offer"]   { border-color: var(--offer);   color: var(--offer); }
+.rr-type-btn[data-type="request"] { border-color: var(--request); color: var(--request); }
+.rr-type-btn[data-type="offer"][data-active="true"]   { background: var(--offer);   color: #fff; }
+.rr-type-btn[data-type="request"][data-active="true"] { background: var(--request); color: #fff; }
 
 @media (max-width: 560px) {
   .rr-form-grid3, .rr-form-grid2 { grid-template-columns: 1fr; }
@@ -567,10 +583,10 @@ function cardHtml(l) {
        </div>`;
 
   return `
-    <div class="rr-tag" data-claimed="${l.claimed}">
+    <div class="rr-tag" data-claimed="${l.claimed}" data-type="${l.type}">
       <div class="rr-tag-hole"></div>
       <div class="rr-badge-row">
-        <span class="rr-type-badge">${TYPES[l.type] || 'Offer'}</span>
+        <span class="rr-type-badge" data-type="${l.type}">${TYPES[l.type] || 'Offer'}</span>
         ${l.ongoing ? '<span class="rr-ongoing-badge">Ongoing</span>' : ''}
       </div>
       <div class="rr-badge-row">
