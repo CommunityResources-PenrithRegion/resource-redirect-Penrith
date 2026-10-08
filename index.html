@@ -240,6 +240,26 @@ body {
 .rr-empty { text-align: center; padding: 50px 20px; color: var(--ink-soft); font-size: 14px; }
 .rr-loading { text-align: center; padding: 40px; color: var(--ink-soft); font-size: 14px; }
 
+/* How-to section */
+.rr-help { background: var(--card); border: 1px solid var(--line); border-radius: 4px; margin-bottom: 18px; }
+.rr-help summary {
+  cursor: pointer; padding: 14px 20px; list-style: none;
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px;
+}
+.rr-help summary::-webkit-details-marker { display: none; }
+.rr-help summary::after { content: '+'; font-family: 'Work Sans', sans-serif; font-size: 22px; line-height: 1; color: var(--ink-soft); }
+.rr-help[open] summary::after { content: '\2013'; }
+.rr-help summary:focus-visible { outline: 2px solid var(--repair); outline-offset: -2px; }
+.rr-help-body { padding: 0 20px 18px; font-size: 14px; line-height: 1.5; }
+.rr-help-body h3 {
+  font-family: 'Work Sans', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; margin: 16px 0 3px;
+}
+.rr-help-body p { margin: 0 0 4px; color: var(--ink-soft); }
+.rr-help-body p.rr-help-intro { color: var(--ink); margin-top: 2px; }
+.rr-help-body em { color: var(--ink); }
+
 /* Offer vs Request colouring */
 .rr-tag[data-type="offer"]   { background: var(--offer-tint);   border-top: 4px solid var(--offer); }
 .rr-tag[data-type="request"] { background: var(--request-tint); border-top: 4px solid var(--request); }
@@ -268,6 +288,44 @@ body {
 </div>
 
 <div class="rr-container">
+  <details class="rr-help">
+    <summary>How does this work?</summary>
+    <div class="rr-help-body">
+      <p class="rr-help-intro">Posting takes about a minute. Here's what each box is for.</p>
+
+      <h3>Item / skill</h3>
+      <p>What you're sharing or looking for, in a few words. For example: "Silverbeet seedlings", "Cardboard rolls", "Lift to the station", "Help fixing a bike tyre".</p>
+
+      <h3>Type</h3>
+      <p>Choose <strong>Offer</strong> if you're giving, lending or helping. Choose <strong>Request</strong> if you're looking for something or someone to help.</p>
+
+      <h3>Category</h3>
+      <p>Pick the closest fit: Food, Garden, Craft, Repair, Service or Other. <strong>Service</strong> is for help rather than things: rides, lending tools, handyman help, teaching, or care and community. If you pick Service, you'll be asked what kind.</p>
+
+      <h3>Quantity (or Availability / When needed)</h3>
+      <p>How much, or when. For things: "6 punnets", "about two boxes". For services: "Weekends, 9am–5pm", "Weekdays around 7am".</p>
+
+      <h3>Suburb / area</h3>
+      <p>Where you're based. The suburb is enough, so please don't put your street address here.</p>
+
+      <h3>Contact + Description</h3>
+      <p>How to reach you, plus anything that helps someone decide. Include your first name and a phone number, email or messaging app, and details like condition, pick-up or drop-off, and the best time to get in touch.</p>
+      <p><em>Example: "Jane, 04xx xxx xxx. Clean and dry. Pick-up from Kingswood or I can drop round. Text first."</em></p>
+
+      <h3>Ongoing</h3>
+      <p>Tick this if you can keep providing it regularly, like cardboard rolls every few weeks, rather than once.</p>
+
+      <h3>When it's gone</h3>
+      <p>Tap <strong>Mark as claimed</strong> on your listing. It moves to the Claimed tab, and you can mark it available again if it comes back.</p>
+
+      <h3>Photos</h3>
+      <p>There's no photo upload. If someone gets in touch, you can send photos in your messages.</p>
+
+      <h3>Keep it safe</h3>
+      <p>For a first handover, meet somewhere public or in daylight, and use your judgement, especially for Care &amp; Community listings.</p>
+    </div>
+  </details>
+
   <div class="rr-form">
     <p class="rr-form-title">Post to the board</p>
     <div class="rr-field rr-group">
